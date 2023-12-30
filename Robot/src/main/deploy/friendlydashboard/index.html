@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Friendly Dashboard</title>
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: monospace;
+    background-color: black;
+    
+    --theme-color-bright: #fcbc34;
+    --theme-color-mid: #e43049;
+    --theme-color-dark: #6d2624;
+    
+    --theme-color-gray: #222;
+    --theme-color-lime: #0F0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.button {
+    display: inline-block;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--theme-color-gray);
+    background-color: var(--theme-color-mid);
+    border: var(--theme-color-mid) solid 0.5em;
+    border-radius: 1em;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.5s;
+}
+.button_spaced {
+    margin: 0.5em;
+    margin-right: 0;
+}
+.button_clickEffect {
+    opacity: 0.5;
+    transition: opacity 0s;
+}
+
+#topbar {
+    position: sticky;
+    top: 0;
+    background-color: var(--theme-color-dark);
+    color: var(--theme-color-bright);
+    border-bottom: var(--theme-color-bright) solid 0.5em;
+}
+#title_and_status {
+    display: inline-block;
+    margin-left: 1em;
+    margin-top: 0;
+    padding-top: 0.67em;
+}
+#robot_name {
+    float: right;
+    margin-right: 1em;
+    color: var(--theme-color-mid);
+}
+@media screen and (max-width: 900px) {
+    #title {
+        display: none;
+    }
+}
+
+#main {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+#tabs, #console {
+    width: 100%;
+    height: 100%;
+}
+
+#tabs {
+    display: flex;
+    flex-direction: column;
+    max-width: 66%;
+    background-color: var(--theme-color-gray);
+    border-right: var(--theme-color-bright) solid 0.5em;
+}
+#tabs_content {
+    height: 0;
+    flex-grow: 1;
+}
+#tabs_selector {
+    display: flex;
+    background-color: var(--theme-color-dark);
+    border-top: var(--theme-color-bright) solid 0.5em;
+}
+#tabs_selector label {
+    width: 100%;
+    cursor: pointer;
+}
+#tabs_selector h2 {
+    text-align: center;
+    color: black;
+}
+#tab_widgets_radio:not(:checked) ~ #tabs_content > #tab_widgets,
+#tab_table_radio:not(:checked) ~ #tabs_content > #tab_table,
+#tab_logs_radio:not(:checked) ~ #tabs_content > #tab_logs {
+    display: none;
+}
+#tab_widgets_radio:checked ~ #tabs_selector #tab_widgets_radio_label h2,
+#tab_table_radio:checked ~ #tabs_selector #tab_table_radio_label h2,
+#tab_logs_radio:checked ~ #tabs_selector #tab_logs_radio_label h2 {
+    color: var(--theme-color-bright);
+}
+
+#tab_table {
+    display: flex;
+    height: 100%;
+    white-space: pre;
+    overflow: auto;
+}
+#tab_table > div {
+    display: flex;
+    flex-direction: column;
+    width: 0;
+    flex-grow: 1;
+}
+#tab_table_all {
+    border-right: var(--theme-color-bright) solid 0.5em;
+}
+#tab_table > div > h2 {
+    position: relative;
+    margin: 0;
+    text-align: center;
+    color: var(--theme-color-gray);
+    background-color: var(--theme-color-mid);
+}
+#tab_table > div > h2 > label {
+    position: absolute;
+}
+#tab_table_all_active_label {
+    left: 0.5em;
+}
+#tab_table_fav_active_label {
+    right: 0.5em;
+}
+#tab_table_all_active:not(:checked) ~ #tab_table_all {
+    display: none;
+}
+#tab_table_fav_active:not(:checked) ~ #tab_table_fav {
+    display: none;
+}
+#tab_table > div > div {
+    display: flex;
+    height: 100%;
+    overflow: auto;
+}
+#tab_table table {
+    width: 100%;
+    height: 0;
+}
+#tab_table textarea {
+    white-space: pre;
+}
+
+
+#console {
+    flex-shrink: 2;
+    display: flex;
+    flex-direction: column;
+    background-color: black;
+}
+#console textarea {
+    color: var(--theme-color-lime);
+}
+#console textarea::selection {
+    background-color: var(--theme-color-lime);
+    color: black;
+}
+#console_toolbar {
+    position: fixed;
+    bottom: 1em;
+    right: 1em;
+}
+#console_toolbar img {
+    width: 2em;
+    height: 2em;
+    padding-left: 2em;
+    float: right;
+    filter: invert(1);
+    cursor: pointer;
+}
+.hidden {
+    display: none !important;
+}
+.active, #packet_protocol_dropdown_open:checked + img {
+    filter: invert(1) brightness(0.5) sepia(1) hue-rotate(90deg) saturate(100) !important;
+}
+
+
+textarea.textbox {
+    width: 100%;
+    height: 100%;
+    resize: none;
+    padding: 1em;
+    box-sizing: border-box;
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: white;
+}
+
+
+table {
+    color: white;
+    border-collapse: collapse;
+}
+table thead tr:nth-child(1), table tbody tr:nth-child(even) {
+    background-color: black;
+}
+table td, table th {
+    border: white dashed 1px;
+}
+.checkbox_column {
+    width: 1em;
+}
+table td:has(input[type=checkbox]) {
+    max-width: 1em;
+}
+table td input[type=checkbox] {
+    display: block;
+    margin: 0;
+}
+
+
+#tab_widgets {
+    height: 100%;
+}
+#tab_widgets > .group {
+    width: 100%;
+    height: 100%;
+}
+.group {
+    display: flex;
+    overflow: auto;
+}
+.group_vertical {
+    flex-direction: column;
+}
+.group_unstretched.group_borderless {
+    margin: 1em;
+}
+.group_unstretched.group_borderless > * + * {
+    margin-top: 1em;
+}
+.group_stretched > *:not(.size_locked) {
+    flex-grow: 1;
+}
+.group_horizontal.group_stretched > *:not(.size_locked) {
+    width: 0;
+}
+.group_vertical.group_stretched > *:not(.size_locked) {
+    height: 0;
+}
+.group_horizontal.group_bordered > * + * {
+    border-left: 0.5em solid var(--theme-color-bright);
+}
+.group_vertical.group_bordered > * + * {
+    border-top: 0.5em solid var(--theme-color-bright);
+}
+.abstract_selection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    color: white;
+}
+.dropdown select {
+    flex-grow: 1;
+}
+.camera {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    overflow: hidden;
+}
+.camera img {
+    max-width: 100%;
+    max-height: 100%;
+}
+.camera_img_not_loaded {
+    width: 100%;
+    height: 100%;
+    background-color: var(--theme-color-gray);
+    background-image: url("static.png");
+    filter: blur(5px);
+}
+.display {
+    color: var(--theme-color-mid);
+    margin: 0;
+    padding: 0.5em;
+}
+.switch label {
+    width: 4em;
+    height: 2em;
+    cursor: pointer;
+    --switch-circle-border: 0.2em;
+}
+.switch input {
+    display: none;
+}
+.switch span {
+    display: block;
+    padding: var(--switch-circle-border);
+    border-radius: 2em;
+    background-color: var(--theme-color-mid);
+}
+.switch span::before {
+    content: "";
+    display: block;
+    width: calc(2em - var(--switch-circle-border) * 2);
+    height: calc(2em - var(--switch-circle-border) * 2);
+    border-radius: 2em;
+    background-color: var(--theme-color-bright);
+    transition: margin-left 0.2s;
+}
+.switch input:checked + span::before {
+    margin-left: 2em;
+}
+
+
+#tab_logs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+#tab_logs_header {
+    border-bottom: var(--theme-color-bright) solid 0.5em;
+}
+#tab_logs_list {
+    padding: 0.5em;
+    color: white;
+    overflow: auto;
+}
+#tab_logs_list div {
+    margin-left: 1em;
+}
+#tab_logs_list input:not(:checked) + label + div {
+    display: none;
+}
+#tab_logs_list label::before, #tab_logs_list text::before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-size: 1em;
+    margin-right: 0.5em;
+    filter: invert(1);
+}
+#tab_logs_list input:not(:checked) + label::before {
+    background-image: url(folder_closed.svg);
+}
+#tab_logs_list input:checked + label::before {
+    background-image: url(folder_open.svg);
+}
+#tab_logs_list text::before {
+    background-image: url(log.svg);
+}
+#tab_logs_list label, #tab_logs_list text {
+    display: block;
+    cursor: pointer;
+}
+#tab_logs_viewer_active:not(:checked) + #tab_logs_viewer {
+    display: none;
+}
+#tab_logs_viewer {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    color: white;
+    background-color: #222D;
+}
+#tab_logs_viewer_header {
+    background-color: var(--theme-color-dark);
+    border-bottom: var(--theme-color-bright) solid 0.5em;
+}
+#tab_logs_viewer_path {
+    margin-left: 1em;
+    word-wrap: break-word;
+}
+#tab_logs_viewer_content {
+    flex-grow: 1;
+    padding: 1em;
+    font-size: 1.2em;
+    font-weight: bold;
+    overflow: auto;
+}
+#tab_logs_viewer_footer {
+    background-color: var(--theme-color-dark);
+    border-top: var(--theme-color-bright) solid 0.5em;
+}
+
+
+#packet_protocol_dropdown {
+    position: absolute;
+    display: none;
+    top: -30px;
+}
+#packet_protocol_dropdown_open:checked ~ #packet_protocol_dropdown {
+    display: block;
+}
+
+
+#topbar_comp_view {
+    background-color: var(--theme-color-gray);
+    mask-image: url(comp_view.svg);
+    -webkit-mask-image: url(comp_view.svg);
+    mask-size: contain;
+    -webkit-mask-size: contain;
+    width: 3em;
+    height: 3em;
+
+    float: right;
+    margin-right: 2em;
+    margin-top: 1em;
+    cursor: pointer;
+}
+#comp_view:checked ~ #topbar > #topbar_comp_view {
+    background-color: var(--theme-color-bright);
+}
+#comp_view:checked ~ #main > #tabs {
+    display: flex !important;
+    max-width: none;
+}
+#comp_view:checked ~ #main > #tabs > #tabs_selector {
+    display: none;
+}
+#comp_view:checked ~ #main > #tabs > #tabs_content > #tab_widgets {
+    display: flex;
+}
+#comp_view:checked ~ #main > #tabs > #tabs_content > *:not(#tab_widgets) {
+    display: none;
+}
+#comp_view:checked ~ #main > #console {
+    display: none;
+}
+</style>
+<script src="networktablesclients/msgpack/msgpack.js"></script>
+<script src="networktablesclients/nt4.js"></script>
+</head>
+<body onclick="onClick(event)">
+
+<input type="checkbox" id="comp_view" hidden />
+
+<div id="topbar">
+    <h1 id="title_and_status">
+        <text id="title">Friendly Dashboard:</text>
+        <text id="connect_status" title="Connect Status" style="color: var(--theme-color-mid);">Disconnected</text>
+        <text id="packet_status" title="Packet Protocol Status" style="color: var(--theme-color-mid);"></text>
+    </h1>
+    <div id="topbar_comp_view" title="Competition View"></div>
+    <h1 id="robot_name"></h1>
+</div>
+
+<div id="main">
+    <div id="tabs">
+        <input type="radio" name="tabs_radio" id="tab_widgets_radio" hidden checked />
+        <input type="radio" name="tabs_radio" id="tab_table_radio" hidden />
+        <input type="radio" name="tabs_radio" id="tab_logs_radio" hidden />
+        <div id="tabs_content">
+            <div id="tab_widgets"></div>
+            <div id="tab_table">
+                <input id="tab_table_all_active" type="checkbox" checked hidden />
+                <input id="tab_table_fav_active" type="checkbox" checked hidden />
+                <div id="tab_table_all">
+                    <h2>All data<label id="tab_table_fav_active_label" for="tab_table_fav_active">&gt;</label></h2>
+                    <div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="checkbox_column"></th>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tab_table_all_content"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="tab_table_fav">
+                    <h2><label id="tab_table_all_active_label" for="tab_table_all_active">&lt;</label>Favorites</h2>
+                    <div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="checkbox_column"></th>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tab_table_fav_content"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="tab_logs">
+                <div id="tab_logs_header">
+                    <a class="button button_spaced" href="javascript:loadLogs()" download>Load Logs</a>
+                    <a class="button button_spaced" href="logs.zip" download>Download All Logs</a>
+                    <a class="button button_spaced" href="javascript:deleteAllLogs()"
+                            title="Doesn't delete the in use logs">Delete All Logs</a>
+                    <a class="button button_spaced" href="javascript:deleteOldLogs()"
+                            title="Deletes logs from other days">Delete Old Logs</a>
+                </div>
+                <div id="tab_logs_list"></div>
+                <input type="checkbox" id="tab_logs_viewer_active" hidden />
+                <div id="tab_logs_viewer">
+                    <div id="tab_logs_viewer_header">
+                        <h1 id="tab_logs_viewer_path"></h1>
+                    </div>
+                    <div id="tab_logs_viewer_content"></div>
+                    <div id="tab_logs_viewer_footer">
+                        <label class="button button_spaced" for="tab_logs_viewer_active">Close</label>
+                        <a class="button button_spaced" href="javascript:refreshLog()">Refresh</a>
+                        <a class="button button_spaced" id="tab_logs_viewer_download" href="javascript:void(0)" download>Download</a>
+                        <a class="button button_spaced" href="javascript:deleteLog()">Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tabs_selector">
+            <label for="tab_widgets_radio" id="tab_widgets_radio_label"><h2>Widgets</h2></label>
+            <label for="tab_table_radio" id="tab_table_radio_label"><h2>Table</h2></label>
+            <label for="tab_logs_radio" id="tab_logs_radio_label"><h2>Logs</h2></label>
+        </div>
+    </div>
+    <div id="console">
+        <textarea id="console_content" class="textbox">
+[Console]
+
+
+&gt; </textarea>
+        <div id="console_toolbar">
+            <img id="console_fullscreen" src="fullscreen.svg" title="Console Fullscreen" />
+            <img id="console_debug" src="debug.svg" title="Debug Mode" />
+            <label id="console_packet_protocol" for="packet_protocol_dropdown_open">
+                <input id="packet_protocol_dropdown_open" type="checkbox" hidden />
+                <img src="packet_protocol.svg" title="Packet Protocol" />
+                <select id="packet_protocol_dropdown">
+                    <option name="Default">Default</option>
+                    <option name="WebSocket">WebSocket</option>
+                    <option name="NetworkTable">NetworkTable</option>
+                </select>
+            </label>
+        </div>
+    </div>
+</div>
+
+<script>
+// Converts any data to something safe to use in an id, via a modified base64 encode
+// Make sure to append some text before the output, as it may start with a non-letter
+function htmlIdEncode(bin) {
+    bin = new TextEncoder().encode(bin); // Handle unicode
+    bin = Array.from(bin, byte => String.fromCodePoint(byte)).join("");
+    return btoa(bin).replaceAll("=", "").replaceAll("+", "-").replaceAll("/", "_");
+}
+
+var baseIP = window.location.hostname.substring(0, window.location.hostname.lastIndexOf("."));
+var robotIP = baseIP + ".2";
+if (baseIP === "") {
+    baseIP = "localhost";
+    robotIP = "localhost";
+}
+
+
+class Widget {
+    constructor(msg) {
+        this.id = msg.shift();
+        this.sizeLocked = msg.shift();
+        this.ntListeners = {};
+
+        widgets.set(this.id, this);
+    }
+    registerListener(name, listener) {
+        if (name instanceof Array) {
+            for (var entry of name) {
+                this.registerListener(entry, listener);
+            }
+            return;
+        }
+        (this.ntListeners[name] ??= []).push(listener);
+    }
+    notifyListeners(name, value) {
+        name = name.split("/");
+        var listenersName = "";
+        while (name.length > 0) {
+            listenersName += name.shift() + (name.length == 0 ? "" : "/");
+            var listeners = this.ntListeners[listenersName];
+            if (listeners != null) {
+                for (var listener of listeners) {
+                    listener(value, name);
+                }
+            }
+        }
+    }
+    build() {
+        throw new Error("Widget#build must be implemented!");
+    }
+}
+
+class GroupWidget extends Widget {
+    constructor(msg) {
+        super(msg);
+        this.vertical = msg.shift();
+        this.stretched = msg.shift();
+        this.bordered = msg.shift();
+        this.widgets = [];
+        for (var i = 0, num = msg.shift(); i < num; i++) {
+            this.widgets.push(new (widgetNames[msg.shift()])(msg));
+        }
+    }
+    build() {
+        var div = document.createElement("div");
+        div.classList.add("group");
+        div.classList.add("group_" + (this.vertical ? "vertical" : "horizontal"));
+        div.classList.add("group_" + (this.stretched ? "stretched" : "unstretched"));
+        div.classList.add("group_" + (this.bordered ? "bordered" : "borderless"));
+        for (var widget of this.widgets) {
+            var builtWidget = widget.build();
+            if (this.stretched && widget.sizeLocked) {
+                builtWidget.classList.add("size_locked");
+            }
+            div.appendChild(builtWidget);
+        }
+        if (!this.bordered) {
+            var wrapper = document.createElement("div");
+            wrapper.appendChild(div);
+            div = wrapper;
+        }
+        return div;
+    }
+}
+
+class AbstractSelectionWidget extends Widget {
+    constructor(type, msg) {
+        super(msg);
+        this.type = type;
+        this.name = msg.shift();
+        this.path = msg.shift();
+        this.registerListener([
+            this.path + "/active",
+            this.path + "/default",
+            this.path + "/options"
+        ], () => this.update());
+    }
+    build() {
+        var div = document.createElement("div");
+        div.classList.add("abstract_selection");
+        div.classList.add(this.type);
+        div.appendChild(document.createTextNode(this.name + ":\u00A0"));
+        div.appendChild(this.buildInteractable());
+        return div;
+    }
+    update() {
+        var selectActive = netTables.entries[this.path + "/active"];
+        var selectDefault = netTables.entries[this.path + "/default"];
+        var selectOptions = netTables.entries[this.path + "/options"];
+        if (selectActive === undefined || selectDefault === undefined || selectOptions === undefined) {
+            return;
+        }
+        selectOptions = JSON.parse(selectOptions);
+
+        this.updateInteractable(selectActive, selectDefault, selectOptions);
+    }
+    buildInteractable() {
+        throw new Error("AbstractSelectionWidget#buildInteractable must be implemented!");
+    }
+    updateInteractable(selectActive, selectDefault, selectOptions) {
+        throw new Error("AbstractSelectionWidget#updateInteractable must be implemented!");
+    }
+}
+
+class DropdownWidget extends AbstractSelectionWidget {
+    constructor(msg) {
+        super("dropdown", msg);
+    }
+    buildInteractable() {
+        this.select = document.createElement("select");
+        this.select.onchange = () => {
+            netTables.setTopicValue(this.path + "/selected", NT4_TYPESTR.STR, this.select.value);
+        };
+        this.update();
+
+        return this.select;
+    }
+    updateInteractable(selectActive, selectDefault, selectOptions) {
+        var elist_options = [];
+        for (var option of selectOptions) {
+            var e_option = document.createElement("option");
+            e_option.appendChild(document.createTextNode(option));
+            e_option.setAttribute("value", option);
+            elist_options.push(e_option);
+        }
+        this.select.replaceChildren(...elist_options);
+        this.select.selectedIndex = selectOptions.indexOf(selectActive);
+    }
+}
+
+class FieldWidget extends Widget {
+    constructor(msg) {
+        super(msg);
+        this.name = msg.shift();
+        this.fieldYear = msg.shift();
+        this.fieldWidthMeters = msg.shift();
+        this.fieldHeightMeters = msg.shift();
+
+        netTables.useFastUpdatePeriod("/SmartDashboard/" + this.name + "/");
+        this.registerListener("/SmartDashboard/" + this.name + "/", () => this._render());
+
+        this.mouseX = -2718;
+        this.mouseY = -2718;
+    }
+    build() {
+        this.canvas = document.createElement("canvas");
+        this.canvas.classList.add("field");
+        this.ctx = this.canvas.getContext("2d");
+
+        this.fieldImg = new Image();
+        this.fieldImg.onload = () => this._render();
+        this.fieldImg.src = "fields/" + this.fieldYear + ".png";
+        
+        this.canvas.onmousemove = event => {
+            this.mouseX = event.offsetX;
+            this.mouseY = event.offsetY;
+            this._render();
+        };
+        this.canvas.onmouseleave = event => {
+            this.mouseX = -2718;
+            this.mouseY = -2718;
+            this._render();
+        };
+        new ResizeObserver(() => this._render()).observe(this.canvas);
+        
+        return this.canvas;
+    }
+    _generateBounds() {
+        // Suggest width & height from field img
+        this.canvas.width = this.fieldImg.width;
+        this.canvas.height = this.fieldImg.height;
+
+        // Get actual width & height and update resolution
+        this.fullWidth = this.canvas.offsetWidth;
+        this.fullHeight = this.canvas.offsetHeight;
+        this.canvas.width = this.fullWidth;
+        this.canvas.height = this.fullHeight;
+
+        // Scale field img and center it
+        var scaleX = this.fullWidth / this.fieldImg.width;
+        var scaleY = this.fullHeight / this.fieldImg.height;
+        var scale = Math.min(scaleX, scaleY);
+
+        this.width = scale * this.fieldImg.width;
+        this.height = scale * this.fieldImg.height;
+        this.x = (this.fullWidth - this.width) / 2;
+        this.y = (this.fullHeight - this.height) / 2;
+    }
+    _render() {
+        this._generateBounds();
+        this.ctx.clearRect(0, 0, this.fullWidth, this.fullHeight);
+        this.ctx.drawImage(this.fieldImg, this.x, this.y, this.width, this.height);
+        
+        for (var entry in netTables.entries) {
+            if (!entry.startsWith("/SmartDashboard/" + this.name + "/"))
+                continue;
+            var objName = entry.substring(("/SmartDashboard/" + this.name + "/").length);
+            if (objName.startsWith("."))
+                continue;
+            
+            var isTrajectory = objName.startsWith("[Trajectory] ");
+            if (objName === "Robot") {
+                this.ctx.fillStyle = "rgb(255, 0, 0)";
+                this.ctx.strokeStyle = "rgb(200, 0, 0)";
+            } else if (isTrajectory) {
+                this.ctx.fillStyle = "rgb(255, 255, 0)";
+                this.ctx.strokeStyle = "rgb(200, 200, 0)";
+            } else {
+                this.ctx.fillStyle = "rgb(0, 255, 0)";
+                this.ctx.strokeStyle = "rgb(0, 200, 0)";
+            }
+            var dataArray = JSON.parse(netTables.entries[entry]);
+            if (isTrajectory) {
+                this._renderTrajectory(objName.substring("[Trajectory] ".length), dataArray);
+            } else {
+                this._renderObject(objName, dataArray);
+            }
+        }
+    }
+    _renderObject(name, dataArray) {
+        this.ctx.lineWidth = 2;
+        const circleRadius = 4;
+        const lineRadius = 16;
+
+        var numSubObjects = dataArray.length / 3;
+        for (var i = 0; i < numSubObjects; i++) {
+            var x = this.x + this._metersToPixels(dataArray[i * 3]);
+            var y = this.y + this.height - this._metersToPixels(dataArray[i * 3 + 1]);
+            var deg = -dataArray[i * 3 + 2];
+            var ang = deg * Math.PI / 180;
+            var sinValue = Math.sin(ang);
+            var cosValue = Math.cos(ang);
+
+            if (Math.pow(x - this.mouseX, 2) + Math.pow(y - this.mouseY, 2) <= Math.pow(lineRadius, 2)) {
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "bottom";
+                this.ctx.fillText(name + (numSubObjects == 1 ? "" : " #" + (i + 1)), x, y - lineRadius);
+            }
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(x - lineRadius * cosValue, y - lineRadius * sinValue);
+            this.ctx.lineTo(x + lineRadius * cosValue, y + lineRadius * sinValue);
+            this._renderArrow(x + lineRadius * cosValue, y + lineRadius * sinValue, ang);
+            this.ctx.stroke();
+
+            this.ctx.beginPath();
+            this.ctx.ellipse(x, y, circleRadius, circleRadius, 0, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+    _renderTrajectory(name, dataArray) {
+        const hoverRadius = 16;
+
+        this.ctx.beginPath();
+        var x, y; // Saves last (x, y)
+        var hovering = false;
+        for (var i = 0; i < dataArray.length / 3; i++) {
+            x = this.x + this._metersToPixels(dataArray[i * 3]);
+            y = this.y + this.height - this._metersToPixels(dataArray[i * 3 + 1]);
+
+            if (Math.pow(x - this.mouseX, 2) + Math.pow(y - this.mouseY, 2) <= Math.pow(hoverRadius, 2)) {
+                hovering = true;
+            }
+
+            if (i == 0) {
+                this.ctx.moveTo(x, y);
+            } else {
+                this.ctx.lineTo(x, y);
+            }
+        }
+        var lastDeg = -dataArray[dataArray.length - 1];
+        var lastAng = lastDeg * Math.PI / 180;
+        this._renderArrow(x, y, lastAng);
+        this.ctx.stroke();
+
+        if (hovering) {
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(name, x + hoverRadius * Math.cos(lastAng), y + hoverRadius * Math.sin(lastAng));
+        }
+    }
+    _renderArrow(x, y, ang) {
+        const arrowRadius = 8;
+        const angShift = Math.PI / 4;
+        
+        this.ctx.moveTo(x - arrowRadius * Math.cos(ang - angShift), y - arrowRadius * Math.sin(ang - angShift));
+        this.ctx.lineTo(x, y);
+        this.ctx.lineTo(x - arrowRadius * Math.cos(ang + angShift), y - arrowRadius * Math.sin(ang + angShift));
+    }
+    _metersToPixels(meters) {
+        // Field image shouldn't be stretched, so width / fieldWidthMeters == height / fieldHeightMeters
+        return meters / this.fieldWidthMeters * this.width;
+    }
+}
+
+class CameraWidget extends Widget {
+    constructor(msg) {
+        super(msg);
+        this.ip = msg.shift();
+        this.autoRestart = msg.shift();
+        if (this.ip.startsWith("{")) {
+            var newIp = (baseIP == "localhost" ? "localhost" :
+                    baseIP + "." + this.ip.substring(1, this.ip.indexOf("}")));
+            var port = this.ip.indexOf(":");
+            if (port != -1)
+                newIp += this.ip.substring(port);
+            this.ip = newIp;
+        }
+        this.fullIp = "http://" + this.ip;
+        this.failedCount = 0;
+    }
+    build() {
+        this.wrapper = document.createElement("div");
+        this.wrapper.classList.add("camera");
+
+        this.loadingImg = document.createElement("div");
+        this.loadingImg.classList.add("camera_img_not_loaded");
+        this.loadingImg.title = this.ip;
+        this.loadingImg.onclick = () => {
+            if (!this.autoRestart) {
+                this.actualImg.src = this.fullIp;
+            }
+        };
+        this.wrapper.replaceChildren(this.loadingImg);
+
+        if (this.autoRestart) {
+            if (!this.autoRestartSetup) {
+                this.autoRestartSetup = true;
+                this.autoRestartLoop();
+            }
+        } else {
+            this.autoRestartSetup = false;
+            this.actualImg = new Image();
+            this.actualImg.src = this.fullIp;
+            this.actualImg.title = this.ip;
+            this.actualImg.onload = () => {
+                this.wrapper.replaceChildren(this.actualImg);
+            };
+            this.actualImg.onerror = () => {
+                this.wrapper.replaceChildren(this.loadingImg);
+            };
+        }
+
+        return this.wrapper;
+    }
+    autoRestartLoop() {
+        if (!widgets.has(this.id)) {
+            return;
+        }
+
+        var loaded = false;
+        var continuedLoop = false;
+        var buffer = new Image();
+        buffer.src = this.fullIp;
+        buffer.title = this.ip;
+        buffer.onload = () => {
+            loaded = true;
+            this.failedCount = 0;
+            this.actualImg = buffer;
+            this.wrapper.children[0].src = "";
+            this.wrapper.replaceChildren(this.actualImg);
+            if (!continuedLoop) {
+                setTimeout(() => this.autoRestartLoop(), 5000);
+            }
+        };
+        setTimeout(() => {
+            if (!loaded) {
+                continuedLoop = true;
+                this.failedCount++;
+                buffer.src = "";
+                if (!this.autoRestart || this.failedCount >= 2) {
+                    this.wrapper.replaceChildren(this.loadingImg);
+                }
+                if (this.autoRestart) {
+                    this.autoRestartLoop();
+                }
+            }
+        }, 5000);
+    }
+}
+
+class DisplayWidget extends Widget {
+    constructor(msg) {
+        super(msg);
+        this.value = msg.shift();
+        var remaining = this.value;
+        var start;
+        var end;
+        while ((start = remaining.indexOf("{")) != -1 && (end = remaining.indexOf("}")) != -1) {
+            var name = remaining.substring(start + 1, end);
+            remaining = remaining.substring(end + 1);
+            this.registerListener(name, value => this.update());
+        }
+    }
+    build() {
+        this.h1 = document.createElement("h1");
+        this.h1.classList.add("display");
+        this.update();
+        return this.h1;
+    }
+    update() {
+        var newValue = "";
+        var remaining = this.value;
+        var start;
+        var end;
+        while ((start = remaining.indexOf("{")) != -1 && (end = remaining.indexOf("}")) != -1) {
+            newValue += remaining.substring(0, start);
+            var name = remaining.substring(start + 1, end);
+            remaining = remaining.substring(end + 1);
+            newValue += netTables.entries[name];
+        }
+        newValue += remaining;
+        this.h1.replaceChildren(document.createTextNode(newValue));
+    }
+}
+
+class ButtonWidget extends Widget {
+    constructor(msg) {
+        super(msg);
+        this.name = msg.shift();
+        this.clickId = 0;
+        this.registerListener("/Dashboard/button_" + this.id + "/clickId", value => {
+            value = parseInt(value);
+            if (value > this.clickId) {
+                this.clickId = value;
+                this.btn.classList.add("button_clickEffect");
+                this.btn.offsetWidth; // Re-calculates CSS, causing the transition to apply
+                this.btn.classList.remove("button_clickEffect");
+            }
+        });
+    }
+    build() {
+        this.btn = document.createElement("text");
+        this.btn.classList.add("button");
+        this.btn.innerText = this.name;
+        this.btn.onclick = () => {
+            netTables.setTopicValue("/SmartDashboard/" + this.name + "/running", NT4_TYPESTR.BOOL, true);
+        };
+        return this.btn;
+    }
+}
+
+class SwitchWidget extends AbstractSelectionWidget {
+    constructor(msg) {
+        super("switch", msg);
+    }
+    buildInteractable() {
+        this.label = document.createElement("label");
+        this.input = document.createElement("input");
+        this.span = document.createElement("span");
+
+        var id = "switch_" + htmlIdEncode(this.path);
+        this.input.setAttribute("id", id);
+        this.input.setAttribute("type", "checkbox");
+        this.label.setAttribute("for", id);
+        this.label.replaceChildren(this.input, this.span);
+
+        this.input.onchange = () => {
+            netTables.setTopicValue(this.path + "/selected", NT4_TYPESTR.STR, "" + this.input.checked);
+        };
+        this.update();
+
+        return this.label;
+    }
+    updateInteractable(selectActive, selectDefault, selectOptions) {
+        if (selectActive === "true") {
+            this.input.checked = true;
+        } else if (selectActive === "false") {
+            this.input.checked = false;
+        } else {
+            this.input.checked = (selectDefault === "true");
+        }
+    }
+}
+
+var widgetNames = {
+    group: GroupWidget,
+    dropdown: DropdownWidget,
+    field: FieldWidget,
+    camera: CameraWidget,
+    display: DisplayWidget,
+    button: ButtonWidget,
+    switch: SwitchWidget
+};
+
+var rootWidget;
+var widgets = new Map();
+
+var e_widgets = document.getElementById("tab_widgets");
+function updateWidgets(rawMsg) {
+    widgets.clear();
+    var msg = msgpack.deserialize(rawMsg, {multiple: true});
+    rootWidget = new (widgetNames[msg.shift()])(msg);
+    e_widgets.replaceChildren(rootWidget.build());
+}
+
+var e_tabs = document.getElementById("tabs");
+var e_console = document.getElementById("console");
+var e_tabTableAllContent = document.getElementById("tab_table_all_content");
+var e_tabTableFavContent = document.getElementById("tab_table_fav_content");
+
+var favorites = [];
+if (localStorage.favorites) {
+    favorites = JSON.parse(localStorage.favorites);
+}
+function favBoxChanged(event) {
+    var key = event.target.parentElement.parentElement.children[1].textContent;
+    if (event.target.checked) {
+        favorites.push(key);
+        localStorage.favorites = JSON.stringify(favorites);
+        addTableRow(e_tabTableFavContent, key, netTables.entries[key]);
+    } else {
+        var i = favorites.indexOf(key);
+        if (i != -1) {
+            favorites.splice(i, 1);
+            localStorage.favorites = JSON.stringify(favorites);
+            for (var row of [...e_tabTableAllContent.children]) {
+                if (key == row.children[1].textContent) {
+                    row.children[0].children[0].checked = false;
+                    break;
+                }
+            }
+            removeTableRow(e_tabTableFavContent, key);
+        }
+    }
+}
+function addTableRow(tableBody, key, value) {
+    function tableData(element) {
+        var data = document.createElement("td");
+        data.appendChild(element);
+        return data;
+    }
+
+    var row = document.createElement("tr");
+    var favBox = document.createElement("input");
+    favBox.setAttribute("type", "checkbox");
+    favBox.setAttribute("onchange", "favBoxChanged(event)");
+    if (favorites.includes(key))
+        favBox.setAttribute("checked", "checked");
+    row.appendChild(tableData(favBox));
+    row.appendChild(tableData(document.createTextNode(key)));
+    row.appendChild(tableData(document.createTextNode(value)));
+
+    for (var entry of tableBody.children) {
+        if (entry.children[1].textContent.localeCompare(key) > 0) {
+            tableBody.insertBefore(row, entry);
+            return;
+        }
+    }
+    tableBody.appendChild(row);
+}
+function removeTableRow(tableBody, key) {
+    for (var row of [...tableBody.children]) {
+        if (key == row.children[1].textContent) {
+            row.remove();
+            return true;
+        }
+    }
+    return false;
+}
+function setTableRow(tableBody, key, value) {
+    var selection = window.getSelection();
+    var selectionValid = (selection.toString().length > 0);
+
+    for (var row of [...tableBody.children]) {
+        if (key == row.children[1].textContent) {
+            if (!selectionValid || !selection.containsNode(row, true)) {
+                row.children[2].replaceChildren(document.createTextNode(value));
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+function updateDebugModeWidget() {
+    var prevDebug = e_debug.classList.contains("active");
+    var newDebug = (netTables.entries["/Dashboard/DebugMode"] === "true");
+    if (prevDebug == newDebug) {
+        return;
+    }
+    if (prevDebug) {
+        e_debug.classList.remove("active");
+    } else {
+        e_debug.classList.add("active");
+    }
+}
+
+
+delete localStorage.data_switch_checked; // Cleanup old tab selector
+for (let tab of ["widgets", "table", "logs"]) {
+    document.getElementById("tab_" + tab + "_radio").onclick = () => {
+        localStorage.tab = tab;
+    };
+}
+if (localStorage.tab !== undefined && ["widgets", "table", "logs"].includes(localStorage.tab)) {
+    document.getElementById("tab_" + localStorage.tab + "_radio").checked = true;
+}
+
+var consoleMsg = "[Console]\n\n";
+var consoleCmdSpacing = "\n> ";
+var consoleCmd = "";
+var e_consoleContent = document.getElementById("console_content");
+e_consoleContent.oninput = () => {
+    if (e_consoleContent.value.startsWith(consoleMsg + consoleCmdSpacing)) {
+        consoleCmd = e_consoleContent.value.substring(consoleMsg.length + consoleCmdSpacing.length);
+        if (consoleCmd.endsWith("\n")) {
+            consoleCmd = consoleCmd.substring(0, consoleCmd.length - 1).replaceAll("_", " ");
+            netTables.sendPacket("ConsoleAction", NT4_TYPESTR.STR, consoleCmd);
+            consoleMsg += consoleCmdSpacing + consoleCmd + "\n";
+            consoleCmd = "";
+        } else {
+            return;
+        }
+    }
+    e_consoleContent.value = consoleMsg + consoleCmdSpacing + consoleCmd;
+};
+e_consoleContent.onkeydown = (event) => {
+    if (event.keyCode == 35) { // End
+        e_consoleContent.value += "\n";
+        e_consoleContent.oninput();
+    }
+};
+
+var e_fullscreen = document.getElementById("console_fullscreen");
+e_fullscreen.onclick = () => {
+    if (e_fullscreen.classList.contains("active")) {
+        e_fullscreen.classList.remove("active");
+        e_tabs.classList.remove("hidden");
+    } else {
+        e_fullscreen.classList.add("active");
+        e_tabs.classList.add("hidden");
+    }
+};
+
+var e_debug = document.getElementById("console_debug");
+e_debug.onclick = () => {
+    if (e_debug.classList.contains("active")) {
+        e_debug.classList.remove("active");
+        netTables.setTopicValue("/Dashboard/DebugMode", NT4_TYPESTR.BOOL, false, true);
+    } else {
+        e_debug.classList.add("active");
+        netTables.setTopicValue("/Dashboard/DebugMode", NT4_TYPESTR.BOOL, true, true);
+    }
+};
+
+var e_packetProtocol = document.getElementById("console_packet_protocol");
+var e_packetProtocolDropdownOpen = document.getElementById("packet_protocol_dropdown_open");
+var e_packetProtocolDropdown = document.getElementById("packet_protocol_dropdown");
+function onClick(event) {
+    if (!e_packetProtocol.contains(event.target)) {
+        e_packetProtocolDropdownOpen.checked = false;
+    }
+}
+e_packetProtocolDropdown.onchange = () => {
+    if (e_packetProtocolDropdown.value == "Default") {
+        netTables.setPacketProtocolToDefault();
+    } else {
+        netTables.setPacketProtocol(e_packetProtocolDropdown.value);
+    }
+};
+
+var e_compViewBtn = document.getElementById("topbar_comp_view");
+var e_compView = document.getElementById("comp_view");
+e_compViewBtn.onclick = () => {
+    e_compView.checked = !e_compView.checked;
+    if (e_compView.checked) {
+        document.body.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+};
+document.onfullscreenchange = () => {
+    if (!document.fullscreenElement) {
+        e_compView.checked = false;
+    }
+};
+
+
+var e_connectStatus = document.getElementById("connect_status");
+var e_packetStatus = document.getElementById("packet_status");
+function updateConnectStatus() {
+    if (netTables.connected) {
+        if (netTables.ready) {
+            e_connectStatus.setAttribute("style", "color: var(--theme-color-lime);");
+            e_connectStatus.textContent = "Connected";
+            if (netTables.getPacketProtocolName() == null) {
+                e_packetStatus.setAttribute("style", "color: var(--theme-color-mid);");
+                e_packetStatus.textContent = "[No Packet Protocol]";
+            } else {
+                if (netTables.isPacketProtocolConnected()) {
+                    e_packetStatus.setAttribute("style", "color: var(--theme-color-lime);");
+                } else {
+                    e_packetStatus.setAttribute("style", "color: var(--theme-color-bright);");
+                }
+                e_packetStatus.textContent = "[" + netTables.getPacketProtocolName()
+                        + (netTables.isPacketProtocolConnected() ? "" : " | Disconnected") + "]";
+            }
+        } else {
+            e_connectStatus.setAttribute("style", "color: var(--theme-color-bright);");
+            e_connectStatus.textContent = "Initializing ...";
+            e_packetStatus.textContent = "";
+        }
+    } else {
+        e_connectStatus.setAttribute("style", "color: var(--theme-color-mid);");
+        e_connectStatus.textContent = "Disconnected";
+        e_packetStatus.textContent = "";
+    }
+}
+
+
+var LogCodes = {
+    LOAD: "L",
+    VIEW: "V",
+    DELETE: "D"
+};
+var e_tabLogsList = document.getElementById("tab_logs_list");
+var e_tabLogsViewerContent = document.getElementById("tab_logs_viewer_content");
+var e_tabLogsViewerPath = document.getElementById("tab_logs_viewer_path");
+var e_tabLogsViewerDownload = document.getElementById("tab_logs_viewer_download");
+var e_tabLogsViewerActive = document.getElementById("tab_logs_viewer_active");
+function loadLogs() {
+    netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.LOAD);
+}
+function addFolder(path, files, e_folder) {
+    var parentSuffix = null;
+
+    for (let {name: file, value} of files) {
+        if (value === 0) {
+            var e_name = document.createElement("text");
+            e_name.setAttribute("id", "file_" + htmlIdEncode(path + file));
+            e_name.appendChild(document.createTextNode(file));
+            e_name.onclick = () => {
+                netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.VIEW + path + file);
+            };
+            e_folder.appendChild(e_name);
+
+            if (file.endsWith(".matchtype")) {
+                parentSuffix = " (" + file.substring(0, file.length - ".matchtype".length) + ")";
+            }
+        } else {
+            var id = "folder_" + htmlIdEncode(path + file);
+
+            var open = document.getElementById(id)?.checked;
+            var e_checkbox = document.createElement("input");
+            e_checkbox.setAttribute("type", "checkbox");
+            e_checkbox.setAttribute("id", id);
+            e_checkbox.setAttribute("hidden", "");
+            if (open) {
+                e_checkbox.setAttribute("checked", "");
+            }
+            e_folder.appendChild(e_checkbox);
+
+            var e_name = document.createElement("label");
+            e_name.setAttribute("for", id);
+            e_folder.appendChild(e_name);
+
+            var e_div = document.createElement("div");
+            var suffix = addFolder(path + file + "/", value, e_div);
+            e_name.appendChild(document.createTextNode(file + (suffix ?? "")));
+            e_folder.appendChild(e_div);
+        }
+    }
+
+    return parentSuffix;
+}
+function deleteAllLogs() {
+    if (!confirm("Are you sure you want to delete all logs?"))
+        return;
+    netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.DELETE);
+}
+function deleteOldLogs() {
+    if (!confirm("Are you sure you want to delete old logs?"))
+        return;
+    netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.DELETE + "\0");
+}
+function refreshLog() {
+    netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.VIEW + e_tabLogsViewerPath.innerText);
+}
+function deleteLog() {
+    var path = e_tabLogsViewerPath.innerText;
+    if (!confirm("Are you sure you want delete '" + path + "'?"))
+        return;
+    netTables.sendPacket("Logs", NT4_TYPESTR.STR, LogCodes.DELETE + path);
+}
+
+setInterval(() => {
+    var consoleMsgs = netTables.readPacket("ConsoleMsg");
+    for (var msg of consoleMsgs) {
+        consoleMsg += msg;
+    }
+    e_consoleContent.value = consoleMsg + consoleCmdSpacing + consoleCmd;
+
+    var logsMsgs = netTables.readPacket("LogsResponse");
+    for (var msg of logsMsgs) {
+        var code = msg.charAt(0);
+        var response = msg.substring(1);
+        switch (code) {
+            case LogCodes.LOAD:
+                function sortLogs(files) {
+                    if (files === 0) {
+                        return 0;
+                    }
+                    var output = [];
+                    for (var file in files) {
+                        output.push({name: file, value: sortLogs(files[file])});
+                    }
+                    output.sort(({name: a}, {name: b}) => (a < b) ? -1 : (a > b) ? 1 : 0);
+                    return output;
+                }
+                var temp = document.createElement("div");
+                addFolder("", sortLogs(JSON.parse(response)), temp);
+                e_tabLogsList.replaceChildren(...temp.children);
+                break;
+            case LogCodes.VIEW:
+                var seperator = response.indexOf("\0");
+                var file = response.substring(0, seperator);
+                var content = response.substring(seperator + 1);
+                e_tabLogsViewerPath.innerText = file;
+                e_tabLogsViewerContent.innerText = content;
+                e_tabLogsViewerDownload.setAttribute("href", "logs/" + file);
+                e_tabLogsViewerActive.checked = true;
+                break;
+            case LogCodes.DELETE:
+                var errorCode = parseInt(response.charAt(0));
+                var file = response.substring(1);
+                switch (errorCode) {
+                    case 0: // Success
+                        document.getElementById("file_" + htmlIdEncode(file)).remove();
+                        if (e_tabLogsViewerPath.innerText == file) {
+                            e_tabLogsViewerActive.checked = false;
+                        }
+                        break;
+                    case 1: // File in use
+                        alert("Cannot delete a log file currently in use: " + file);
+                        break;
+                    case 2: // Error deleting
+                        alert("There was an error deleting the log file: " + file);
+                        break;
+                }
+                break;
+        }
+    }
+}, 200);
+
+
+class NetworkTablesHandler {
+    constructor(updatePeriod, fastUpdatePeriod) {
+        this.updatePeriod = updatePeriod;
+        this.fastUpdatePeriod = fastUpdatePeriod;
+        this.subs = [];
+        this.entries = {};
+        this.topics = {};
+        this.packetProtocol = null;
+        this.defaultPacketProtocol = null;
+        this.connected = false;
+        this.ready = false;
+        this.ntClient = new NT4_Client(
+            robotIP,
+            this.onTopicAdded.bind(this),
+            this.onTopicRemoved.bind(this),
+            this.onTopicUpdated.bind(this),
+            this.onConnected.bind(this),
+            this.onDisconnected.bind(this));
+    }
+    onConnected() {
+        // Clear previous data
+        this.entries = {};
+        this.topics = {};
+        this.newTopics = {};
+        e_tabTableAllContent.replaceChildren();
+        e_tabTableFavContent.replaceChildren();
+
+        // Listen to new data
+        this.subs.push(this.ntClient.subscribePeriodic(["/"], this.updatePeriod / 1000.0));
+
+        this.defaultPacketProtocol = null;
+        if (this.packetProtocol != null) {
+            this.packetProtocol.onNTConnected(this);
+        }
+
+        this.connected = true;
+        updateConnectStatus();
+    }
+    onDisconnected() {
+        // Don't clear entries until reconnect, as the network tables data is still useful
+        this.subs.length = 0;
+        this.topics = {};
+        this.connected = false;
+        this.ready = false;
+        if (this.packetProtocol != null) {
+            this.packetProtocol.onNTDisconnected(this);
+        }
+        updateConnectStatus();
+    }
+    onTopicAdded(topic) {
+        if (topic.name == "/Dashboard/Widgets") {
+            return;
+        }
+
+        this.topics[topic.name] = topic;
+        addTableRow(e_tabTableAllContent, topic.name, "Loading ...");
+        if (favorites.includes(topic.name)) {
+            addTableRow(e_tabTableFavContent, topic.name, "Loading ...");
+        }
+        var value = this.newTopics[topic.name];
+        if (value !== undefined) {
+            var timestamp = this.ntClient.getServerTime_us();
+            this.ntClient.addSample(topic, timestamp, value);
+            this.onTopicUpdated(topic, timestamp, value);
+        }
+        if (topic.name == "/Dashboard/Ready") {
+            this.ready = true;
+            updateConnectStatus();
+        }
+    }
+    onTopicRemoved(topic) {
+        if (topic.name == "/Dashboard/Widgets") {
+            return;
+        }
+
+        delete this.entries[topic.name];
+        delete this.topics[topic.name];
+        removeTableRow(e_tabTableAllContent, topic.name);
+        if (favorites.includes(topic.name)) {
+            removeTableRow(e_tabTableFavContent, topic.name);
+        }
+    }
+    onTopicUpdated(topic, timestamp, value) {
+        if (topic.name == "/Dashboard/Widgets") {
+            updateWidgets(value);
+            return;
+        }
+
+        value = (value instanceof Object ? JSON.stringify(value) : value.toString());
+        if (this.entries[topic.name] == value) {
+            return;
+        }
+        this.entries[topic.name] = value;
+        setTableRow(e_tabTableAllContent, topic.name, value);
+        if (favorites.includes(topic.name)) {
+            setTableRow(e_tabTableFavContent, topic.name, value);
+        }
+
+        if (topic.name == "/Dashboard/Ready") {
+            this.ready = (value === "true");
+            updateConnectStatus();
+        } else if (topic.name == "/Dashboard/PacketProtocol") {
+            if (this.defaultPacketProtocol == null) {
+                this.defaultPacketProtocol = value;
+            }
+            if (this.packetProtocol == null || this.packetProtocol.getName() != value) {
+                if (this.packetProtocol != null) {
+                    this.packetProtocol.close();
+                }
+                this.packetProtocol = packetProtocols[value] ?? null;
+                if (this.packetProtocol != null) {
+                    this.packetProtocol = this.packetProtocol();
+                    this.packetProtocol.onNTConnected(this);
+                }
+                updateConnectStatus();
+            }
+            if (e_packetProtocolDropdown.value != "Default") {
+                this.requestedPacketProtocol = e_packetProtocolDropdown.value;
+            }
+            if (this.requestedPacketProtocol != undefined && this.requestedPacketProtocol != value) {
+                this.setPacketProtocol(this.requestedPacketProtocol);
+            }
+        } else if (topic.name == "/Dashboard/DebugMode") {
+            updateDebugModeWidget();
+        } else if (topic.name == "/SmartDashboard/Selected Robot") {
+            document.getElementById("robot_name").replaceChildren(document.createTextNode(value));
+        }
+        widgets.forEach(widget => widget.notifyListeners(topic.name, value));
+    }
+    useFastUpdatePeriod(name) {
+        this.subs.push(this.ntClient.subscribePeriodic([name], this.fastUpdatePeriod / 1000.0));
+    }
+    setTopicValue(name, type, value, retained = false) {
+        var topic = this.topics[name];
+        if (!topic) {
+            this.newTopics[name] = value;
+            topic = this.ntClient.publishNewTopic(name, type);
+            if (retained) {
+                this.ntClient.setProperties(topic, false, true);
+            }
+        } else {
+            if (topic.pubuid == 0) {
+                this.ntClient.publishTopic(topic);
+            }
+            var timestamp = this.ntClient.getServerTime_us();
+            this.ntClient.addSample(topic, timestamp, value);
+            this.onTopicUpdated(topic, timestamp, value);
+        }
+    }
+
+    setPacketProtocol(protocol) {
+        if (!this.isPacketProtocolConnected()) {
+            this.requestedPacketProtocol = protocol;
+            return;
+        }
+        if (this.packetProtocol.getName() == protocol) {
+            return;
+        }
+        this.requestedPacketProtocol = null;
+        this.packetProtocol.sendPacket("SetPacketProtocol", NT4_TYPESTR.STR, protocol);
+    }
+    setPacketProtocolToDefault() {
+        if (this.defaultPacketProtocol == null) {
+            this.requestedPacketProtocol = null;
+        } else {
+            this.setPacketProtocol(this.defaultPacketProtocol);
+        }
+    }
+    getPacketProtocolName() {
+        if (this.packetProtocol == null) {
+            return null;
+        }
+        return this.packetProtocol.getName();
+    }
+    isPacketProtocolConnected() {
+        if (this.packetProtocol == null) {
+            return false;
+        }
+        return this.packetProtocol.isConnected(this);
+    }
+    readPacket(name) {
+        if (this.packetProtocol != null) {
+            return this.packetProtocol.readPacket(name);
+        }
+        return [];
+    }
+    sendPacket(name, type, value, timeout) {
+        if (this.packetProtocol != null) {
+            return this.packetProtocol.sendPacket(name, type, value, timeout);
+        }
+        console.warn("Attempted to send packet '" + name + "' without a protocol!");
+    }
+}
+
+class PacketProtocol {
+    getName() {
+        throw new Error("Must be implemented");
+    }
+    onNTConnected(netTables) {}
+    onNTDisconnected(netTables) {}
+    isConnected(netTables) {
+        throw new Error("Must be implemented");
+    }
+    readPacket(name) {
+        throw new Error("Must be implemented");
+    }
+    sendPacket(name, type, value, timeout = 5000) {
+        throw new Error("Must be implemented");
+    }
+    close() {}
+}
+
+class NetworkTablePacketProtocol extends PacketProtocol {
+    constructor() {
+        super();
+        this.ids = {};
+    }
+    getName() {
+        return "NetworkTable";
+    }
+    onNTConnected(netTables) {
+        this.ids = {};
+        this.netTables = netTables;
+    }
+    isConnected(netTables) {
+        return netTables.connected;
+    }
+    readPacket(name) {
+        var output = [];
+        var id = parseInt(this.netTables.entries["/Dashboard/" + name + "@"]);
+        if (isNaN(id)) {
+            return output;
+        }
+        var expectedId = (this.ids[name] ?? 0);
+        if (id < expectedId) {
+            return output;
+        }
+        var numPackets = id - expectedId + 1;
+
+        var lastReadId = -1;
+        var lostPackets = [];
+        for (var i = 0; i < numPackets; i++) {
+            var packet = this.netTables.entries["/Dashboard/" + name + "@" + (expectedId + i)];
+            if (packet !== undefined) {
+                output.push(packet);
+                lastReadId = expectedId + i;
+            } else {
+                lostPackets.push(expectedId + i);
+            }
+        }
+        if (lastReadId != -1) {
+            this.ids[name] = lastReadId + 1;
+            for (var lostPacket of lostPackets) {
+                if (lostPacket < lastReadId) {
+                    console.warn("Packet " + name + "@" + lostPacket + " was lost!");
+                }
+            }
+        }
+        return output;
+    }
+    sendPacket(name, type, value, timeout = 5000) {
+        var id = this.ids[name];
+        if (id === undefined) {
+            var restoredId = this.netTables.entries["/Dashboard/" + name + "@"];
+            if (restoredId === undefined) {
+                id = 0;
+            } else {
+                id = parseInt(restoredId) + 1;
+            }
+        } else {
+            id++;
+        }
+        this.ids[name] = id;
+
+        this.netTables.setTopicValue("/Dashboard/" + name + "@" + id, type, value);
+        this.netTables.setTopicValue("/Dashboard/" + name + "@", NT4_TYPESTR.INT, id, true);
+
+        setTimeout(() => {
+            var topic = this.netTables.topics["/Dashboard/" + name + "@" + id];
+            this.netTables.ntClient.unPublishTopic(topic);
+            this.netTables.onTopicRemoved(topic);
+        }, timeout);
+    }
+}
+
+class WebSocketPacketProtocol extends PacketProtocol {
+    static types = ["unassigned", "boolean", "double", "string", "raw",
+            "boolean[]", "double[]", "string[]", "integer", "float", "integer[]", "float[]"];
+    constructor(...ports) {
+        super();
+        this.ports = ports;
+        this.closed = false;
+        this.receivedPackets = {};
+        this._initSocket(0);
+    }
+    _initSocket(portIndex) {
+        this.socket = new WebSocket("ws://" + robotIP + ":" + this.ports[portIndex]);
+        this.socket.binaryType = "arraybuffer";
+        this.socket.addEventListener("open", event => {
+            this.connected = true;
+            updateConnectStatus();
+        });
+        this.socket.addEventListener("close", event => {
+            this.connected = false;
+            updateConnectStatus();
+            if (!this.closed) {
+                this._initSocket((portIndex + 1) % this.ports.length);
+            }
+        });
+        this.socket.addEventListener("message", event => {
+            var packet = msgpack.deserialize(new Uint8Array(event.data), {multiple: true});
+            var name = packet[0];
+            var value = packet[1];
+            (this.receivedPackets[name] ??= []).push(value);
+        });
+        this.socket.addEventListener("error", event => {
+            console.error("WebSocket Error: " + JSON.stringify(event));
+        });
+    }
+    getName() {
+        return "WebSocket";
+    }
+    isConnected(netTables) {
+        return this.connected;
+    }
+    readPacket(name) {
+        var output = this.receivedPackets[name] ?? [];
+        this.receivedPackets[name] = [];
+        return output;
+    }
+    sendPacket(name, type, value) {
+        if (!this.connected) {
+            console.warn("Attempted to send packet '" + name + "' while disconnected!");
+            return;
+        }
+        this.socket.send(msgpack.serialize([
+            name,
+            type.endsWith("[]") ? [WebSocketPacketProtocol.types.indexOf(type), ...value] : value
+        ], {multiple: true}));
+    }
+    close() {
+        this.closed = true;
+        this.socket.close();
+    }
+}
+
+var packetProtocols = {
+    NetworkTable: () => new NetworkTablePacketProtocol(),
+    WebSocket: () => new WebSocketPacketProtocol(5809, 5807, 5806)
+};
+
+// Update every 200ms, fast update every 50ms
+var netTables = new NetworkTablesHandler(200, 50);
+
+</script>
+
+</body>
+</html>
